@@ -3,21 +3,30 @@
 import unittest
 import subprocess
 from time import sleep
-import urllib2
 import json
 import os
+
+try:
+    # For Python 3.0 and later
+    from urllib.request import urlopen
+    from urllib.request import Request
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlopen
+    from urllib2 import Request
 
 nlgserv = None
 
 def setUpModule():
     global nlgserv
     print("Starting up nlgserv...")
-    nlgserv = subprocess.Popen([os.path.join(os.path.dirname(__file__),"../jython.jar"), os.path.join(os.path.dirname(__file__), "../_server.py"), "localhost", "8080"],
+    nlgserv = subprocess.Popen(["java", "-jar",
+                               os.path.join(os.path.dirname(__file__),"../jython.jar"), os.path.join(os.path.dirname(__file__), "../_server.py"), "localhost", "8080"],
                                stdin=subprocess.PIPE,
                                stdout=open(os.path.join(os.path.dirname(__file__), "nlgserv.stdout.log"), "w+"),
                                stderr=open(os.path.join(os.path.dirname(__file__), "nlgserv.stderr.log"), "w+"),
                                preexec_fn=os.setsid)
-    sleep(60) # It needs longer now it's loading from the standalone package...
+    # sleep(60) # It needs longer now it's loading from the standalone package...
     print("Commencing testing...")
     
 def tearDownModule():
@@ -28,10 +37,10 @@ def tearDownModule():
     
 
 def send_data(json_data):
-    req = urllib2.Request("http://localhost:8080/generateSentence",
-                          data=json_data,
+    req = Request("http://localhost:8080/generateSentence",
+                          data=json_data.encode('utf-8'),
                           headers={"Content-Type":"application/json"})
-    return urllib2.urlopen(req).read()
+    return urlopen(req).read()
 
 class TestCake(unittest.TestCase):
     def test(self):
